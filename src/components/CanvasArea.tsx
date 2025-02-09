@@ -5,11 +5,10 @@ import { useAnnotation } from '../context/AnnotationContext.tsx'
 
 const CanvasArea: React.FC = () => {
   const { state, dispatch } = useAnnotation()
-  const { image, activeTool, activeClass, brushSize, lines, polygons } = state;
+  const { image, activeTool, activeClass, brushSize, lines, polygons, tempPoints } = state;
 
   const [konvaImage, setKonvaImage] = useState<HTMLImageElement | null>(null)
   const [isDrawing, setIsDrawing] = useState(false)
-  const [tempPoints, setTempPoints] = useState<number[]>([])
 
   const stageRef = useRef<any>(null)
 
@@ -78,9 +77,9 @@ const CanvasArea: React.FC = () => {
     const point = stage.getPointerPosition()
   
     // If this is the first vertex, or we have no points yet, just add it
-    if (tempPoints.length === 0) {
-      setTempPoints([point.x, point.y])
-      return
+    if (state.tempPoints.length === 0) {
+      dispatch({ type: "SET_TEMP_POINTS", payload: [point.x, point.y] });
+      return;
     }
   
     // Check distance from new click to the first vertex
@@ -107,10 +106,9 @@ const CanvasArea: React.FC = () => {
         }
       });
       // Reset tempPoints for a new polygon
-      setTempPoints([])
+      dispatch({ type: "SET_TEMP_POINTS", payload: [] });
     } else {
-      // Otherwise, just add this point to tempPoints
-      setTempPoints((prev) => [...prev, point.x, point.y])
+      dispatch({ type: "SET_TEMP_POINTS", payload: [...tempPoints, point.x, point.y] });
     }
   }  
 

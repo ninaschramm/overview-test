@@ -12,6 +12,13 @@ interface Polygon {
   color: string;
 }
 
+interface BrushLine {
+  points: number[];
+  color: string;
+  strokeWidth: number;
+  categoryId: number;
+}
+
 interface Class {
   id: number;
   name: string;
@@ -31,11 +38,14 @@ const PREDEFINED_CLASSES: Class[] = [
 interface AnnotationState {
   image: ImageFile;
   polygons: Polygon[];
-  lines: any[];
+  lines: BrushLine[];
   classes: Class[];
   activeTool: 'brush' | 'polygon' | 'eraser';
   brushSize: number;
   activeClass: Class;
+  historyStack: AnnotationState[];
+  redoStack: AnnotationState[];
+  tempPoints: number[];
 }
 
 // Define actions
@@ -47,31 +57,91 @@ type Action =
   | { type: "SET_CLASSES"; payload: Class[] }
   | { type: "SET_ACTIVE_TOOL"; payload: "brush" | "polygon" | "eraser" }
   | { type: "SET_BRUSH_SIZE"; payload: number }
-  | { type: "SET_ACTIVE_CLASS"; payload: Class | null };
+  | { type: "SET_ACTIVE_CLASS"; payload: Class | null }
+  | { type: "UNDO" }
+  | { type: "REDO" }
+  | { type: "SET_TEMP_POINTS"; payload: number[] };
 
-
+const log = console.log
 // Reducer function to update the state
 const annotationReducer = (state: AnnotationState, action: Action): AnnotationState => {
   switch (action.type) {
     case "SET_IMAGE":
       return { ...state, image: action.payload };
     case "ADD_POLYGON":
-      return { ...state, polygons: [...state.polygons, action.payload] };
+      return {
+        ...state,
+        tempPoints: [], // Clear temp points,
+        historyStack: [...state.historyStack, state], // Save history
+        redoStack: [], // Clear redo when new action happens
+        polygons: [...state.polygons, action.payload],
+      };
     case "ADD_BRUSH_LINE":
-      return { ...state, lines: [...state.lines, action.payload] };
+      return {
+        ...state,
+        historyStack: [...state.historyStack, state], // Save history
+        redoStack: [],
+        lines: [...state.lines, action.payload],
+      };
     case "UPDATE_LAST_LINE":
       return {
         ...state,
-        lines: [...state.lines.slice(0, -1), action.payload] // Replace the last line
+        lines: [...state.lines.slice(0, -1), action.payload]
       };
     case "SET_CLASSES":
       return { ...state, classes: action.payload };
     case "SET_ACTIVE_TOOL":
-      return { ...state, activeTool: action.payload }; // 👈 Now updates the selected tool
+      return { ...state, activeTool: action.payload };
     case "SET_BRUSH_SIZE":
-      return { ...state, brushSize: action.payload }; // 👈 Now updates the brush size
+      return { ...state, brushSize: action.payload };
     case "SET_ACTIVE_CLASS":
-      return { ...state, activeClass: action.payload }; // 👈 Now updates the selected annotation class
+      return { ...state, activeClass: action.payload };
+    case "UNDO":
+      if (state.activeTool === "polygon") {
+        if (state.tempPoints.length > 0) {
+          // If we're still drawing, remove ONLY the last vertex
+          return { 
+            ...state, 
+            tempPoints: state.tempPoints.slice(0, -2) 
+          };
+        } else if (state.polygons.length > 0) {
+          // If polygon is completed, remove it COMPLETELY (no history saving)
+          return {
+            ...state,
+            polygons: state.polygons.slice(0, -1), // Remove last polygon
+            tempPoints: [], // Ensure tempPoints are cleared
+          };
+        }
+      } 
+
+      if (state.historyStack.length > 0) {
+        // Standard undo logic for brush strokes and finalized polygons
+        const prevState = state.historyStack[state.historyStack.length - 1];
+        return {
+          ...prevState,
+          redoStack: [state, ...state.redoStack], // Push current state to redo stack
+          historyStack: state.historyStack.slice(0, -1), // Remove last history entry
+          tempPoints: [], // Make sure no stray tempPoints remain
+        };
+      }
+
+      return state;
+
+    case "REDO":
+      if (state.redoStack.length === 0) return state; // Nothing to redo
+
+      const nextState = state.redoStack[0];
+      return {
+        ...nextState,
+        historyStack: [...state.historyStack, state], // Save current state in history stack
+        redoStack: state.redoStack.slice(1), // Remove next redo state
+      };
+    case "SET_TEMP_POINTS":
+      log("SET_TEMP_POINTS", action.payload)
+      return {
+        ...state,
+        tempPoints: action.payload
+      };
     default:
       return state;
   }
@@ -91,7 +161,10 @@ export const AnnotationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     classes: PREDEFINED_CLASSES,
     activeTool: "brush",
     brushSize: 4,
-    activeClass: PREDEFINED_CLASSES[0] || null
+    activeClass: PREDEFINED_CLASSES[0] || null,
+    historyStack: [],
+    redoStack: [],
+    tempPoints: []
   });
 
   return <AnnotationContext.Provider value={{ state, dispatch }}>{children}</AnnotationContext.Provider>;
