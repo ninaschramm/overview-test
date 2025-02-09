@@ -4,14 +4,15 @@ import Toolbar from '../components/Toolbar.tsx'
 import { Select, MenuItem } from '@mui/material'
 
 interface AnnotationClass {
+  id: number
   name: string
   color: string
 }
 
 const PREDEFINED_CLASSES: AnnotationClass[] = [
-  { name: 'Car', color: '#ff0000' },
-  { name: 'Person', color: '#00ff00' },
-  { name: 'Tree', color: '#0000ff' }
+  { name: 'Car', color: '#ff0000', id: 1 },
+  { name: 'Person', color: '#00ff00', id: 2 },
+  { name: 'Tree', color: '#0000ff', id: 3 }
 ]
 
 const AnnotationPage: React.FC = () => {
@@ -20,6 +21,8 @@ const AnnotationPage: React.FC = () => {
   const [activeTool, setActiveTool] = useState<'brush' | 'polygon' | 'eraser'>('brush')
   const [activeClassIndex, setActiveClassIndex] = useState<number>(0)
   const [brushSize, setBrushSize] = useState<number>(4)
+  const [lines, setLines] = useState<any[]>([])
+  const [polygons, setPolygons] = useState<any[]>([])
 
   return (
     <div style={{ margin: '20px' }}>
@@ -46,8 +49,12 @@ const AnnotationPage: React.FC = () => {
         width={600}
         height={400}
         activeTool={activeTool}
-        activeClassColor={PREDEFINED_CLASSES[activeClassIndex].color}
+        activeClass={PREDEFINED_CLASSES[activeClassIndex]}
         brushSize={brushSize}
+        lines={lines}
+        setLines={setLines}
+        polygons={polygons}
+        setPolygons={setPolygons}
       />
     </div>
   )
