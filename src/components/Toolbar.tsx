@@ -5,46 +5,40 @@ import BrushIcon from '@mui/icons-material/Brush'
 import PolylineIcon from '@mui/icons-material/Polyline'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { Slider } from '@mui/material'
+import { useAnnotation } from '../context/AnnotationContext.tsx'
 
-interface ToolbarProps {
-  currentTool: string
-  onToolChange: (tool: string) => void
-  brushSize: number
-  onBrushSizeChange: (size: number) => void 
-}
 
-const Toolbar: React.FC<ToolbarProps> = ({ 
-  currentTool, 
-  onToolChange,
-  brushSize,
-  onBrushSizeChange
- }) => {
+
+const Toolbar: React.FC = () => {
+  const { state, dispatch } = useAnnotation()
+  const { activeTool, brushSize } = state
+
   return (
     <div style={{ display: 'flex', gap: '1rem' }}>
       <IconButton 
-        color={currentTool === 'brush' ? 'primary' : 'default'}
-        onClick={() => onToolChange('brush')}
+        color={activeTool === 'brush' ? 'primary' : 'default'}
+        onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', payload: 'brush' })}
       >
         <BrushIcon />
       </IconButton>
       <IconButton 
-        color={currentTool === 'polygon' ? 'primary' : 'default'}
-        onClick={() => onToolChange('polygon')}
+        color={activeTool === 'polygon' ? 'primary' : 'default'}
+        onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', payload: 'polygon' })}
       >
         <PolylineIcon />
       </IconButton>
       <IconButton 
-        color={currentTool === 'eraser' ? 'primary' : 'default'}
-        onClick={() => onToolChange('eraser')}
+        color={activeTool === 'eraser' ? 'primary' : 'default'}
+        onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', payload: 'eraser' })}
       >
         <DeleteIcon />
       </IconButton>
-      {currentTool === 'brush' && (
+      {activeTool === 'brush' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <label>Brush Size</label>
           <Slider
             value={brushSize}
-            onChange={(e, val) => onBrushSizeChange(val as number)}
+            onChange={(e, val) => dispatch({ type: 'SET_BRUSH_SIZE', payload: val as number })}
             min={1}
             max={50}
             step={1}
