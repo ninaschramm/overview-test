@@ -36,17 +36,22 @@ const PREDEFINED_CLASSES: Class[] = [
 
 // Define the global state
 interface AnnotationState {
-  image: ImageFile;
   polygons: Polygon[];
   lines: BrushLine[];
-  classes: Class[];
-  activeTool: 'brush' | 'polygon' | 'eraser';
-  brushSize: number;
-  activeClass: Class;
-  historyStack: AnnotationState[];
-  redoStack: AnnotationState[];
   tempPoints: number[];
+  activeTool: string;
+  brushSize: number;
+  // etc.
+  historyStack: Array<{
+    polygons: Polygon[];
+    lines: BrushLine[];
+  }>;
+  redoStack: Array<{
+    polygons: Polygon[];
+    lines: BrushLine[];
+  }>;
 }
+
 
 // Define actions
 type Action =
@@ -68,20 +73,33 @@ const annotationReducer = (state: AnnotationState, action: Action): AnnotationSt
   switch (action.type) {
     case "SET_IMAGE":
       return { ...state, image: action.payload };
-    case "ADD_POLYGON":
-      return {
-        ...state,
-        tempPoints: [], // Clear temp points,
-        historyStack: [...state.historyStack, state], // Save history
-        redoStack: [], // Clear redo when new action happens
-        polygons: [...state.polygons, action.payload],
-      };
+      case "ADD_POLYGON": {
+        // Actually let's call it "FINISH_POLYGON" for clarity
+        const newPolygon = action.payload; // { points, color, categoryId }
+        const oldSnapshot = {
+          polygons: [...state.polygons],
+          lines: [...state.lines],
+        };
+      
+        return {
+          ...state,
+          polygons: [...state.polygons, newPolygon],
+          tempPoints: [],
+          redoStack: [],
+          historyStack: [...state.historyStack, oldSnapshot], // store old annotation data
+        };
+      }      
     case "ADD_BRUSH_LINE":
+      const newLine = action.payload; // { points, color, strokeWidth, categoryId }
+      const oldSnapshot = {
+        polygons: [...state.polygons],
+        lines: [...state.lines],
+      };
       return {
         ...state,
-        historyStack: [...state.historyStack, state], // Save history
+        historyStack: [...state.historyStack, oldSnapshot], // Save history
         redoStack: [],
-        lines: [...state.lines, action.payload],
+        lines: [...state.lines, newLine],
       };
     case "UPDATE_LAST_LINE":
       return {
@@ -96,45 +114,41 @@ const annotationReducer = (state: AnnotationState, action: Action): AnnotationSt
       return { ...state, brushSize: action.payload };
     case "SET_ACTIVE_CLASS":
       return { ...state, activeClass: action.payload };
-    case "UNDO":
-      if (state.activeTool === "polygon") {
-        if (state.tempPoints.length > 0) {
-          // If we're still drawing, remove ONLY the last vertex
-          return { 
-            ...state, 
-            tempPoints: state.tempPoints.slice(0, -2) 
-          };
-        } else if (state.polygons.length > 0) {
-          // If polygon is completed, remove it COMPLETELY (no history saving)
-          return {
-            ...state,
-            polygons: state.polygons.slice(0, -1), // Remove last polygon
-            tempPoints: [], // Ensure tempPoints are cleared
-          };
-        }
-      } 
-
-      if (state.historyStack.length > 0) {
-        // Standard undo logic for brush strokes and finalized polygons
-        const prevState = state.historyStack[state.historyStack.length - 1];
+    case "UNDO": {
+      // 1) If we have partial polygon:
+      if (state.tempPoints.length > 0) {
+        // remove last vertex
         return {
-          ...prevState,
-          redoStack: [state, ...state.redoStack], // Push current state to redo stack
-          historyStack: state.historyStack.slice(0, -1), // Remove last history entry
-          tempPoints: [], // Make sure no stray tempPoints remain
+          ...state,
+          tempPoints: state.tempPoints.slice(0, -2)
         };
       }
-
+    
+      // 2) Otherwise, revert from history
+      if (state.historyStack.length > 0) {
+        const oldAnnotationData = state.historyStack[state.historyStack.length - 1];
+    
+        return {
+          ...state,
+          polygons: oldAnnotationData.polygons,
+          lines: oldAnnotationData.lines,
+          historyStack: state.historyStack.slice(0, -1) // remove last snapshot
+        };
+      }
+    
       return state;
-
+    }
     case "REDO":
-      if (state.redoStack.length === 0) return state; // Nothing to redo
+      if (state.redoStack.length === 0) return state; // No redo available
 
-      const nextState = state.redoStack[0];
+      const nextAnnotationData = state.redoStack[0]; // Get the next saved annotation state
+
       return {
-        ...nextState,
-        historyStack: [...state.historyStack, state], // Save current state in history stack
-        redoStack: state.redoStack.slice(1), // Remove next redo state
+        ...state,
+        polygons: nextAnnotationData.polygons,
+        lines: nextAnnotationData.lines,
+        historyStack: [...state.historyStack, { polygons: state.polygons, lines: state.lines }], // Save current state
+        redoStack: state.redoStack.slice(1), // Remove used redo state
       };
     case "SET_TEMP_POINTS":
       log("SET_TEMP_POINTS", action.payload)
