@@ -1,6 +1,7 @@
 import React from 'react'
 import CanvasArea from '../components/CanvasArea.tsx'
 import Toolbar from '../components/Toolbar.tsx'
+import ImageSelector from '../components/ImageSelector.tsx'
 import { Select, MenuItem, Button } from '@mui/material'
 import { useAnnotation } from '../context/AnnotationContext.tsx'
 import { useNavigate } from 'react-router-dom'
@@ -30,6 +31,7 @@ const AnnotationPage: React.FC = () => {
           </MenuItem>
         ))}
       </Select>
+      <ImageSelector />
       <CanvasArea />
       <Button 
         variant="contained" 

@@ -14,8 +14,7 @@ const ExportButton: React.FC = () => {
   const handleExport = () => {
     console.log("📌 ExportButton canvasRef.current:", canvasRef.current);
     const cocoJson = generateCOCO(
-      state.image.file,
-      state.image.dimensions,
+      state.images,
       state.polygons,
       state.classes,
       state.lines,

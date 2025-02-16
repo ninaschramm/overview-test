@@ -1,27 +1,33 @@
-import React, { useRef, useEffect, useState, JSX, useImperativeHandle, forwardRef } from 'react'
+import React, { useRef, useEffect, useState, JSX, forwardRef, useMemo } from 'react'
 import { Stage, Layer, Image as KonvaImage, Line, Circle } from 'react-konva'
 import styled from 'styled-components'
 import { useAnnotation } from '../context/AnnotationContext.tsx'
 
 const CanvasArea = forwardRef((props, ref) => {
-  console.log("🛠️ CanvasArea received ref:", ref);
   const { state, dispatch, setCanvasRef, setBrushMasks, setPolygonMasks } = useAnnotation()
-  const { image, activeTool, activeClass, brushSize, lines, polygons, tempPoints } = state;
+  const { activeTool, activeClass, brushSize, lines, polygons, tempPoints, selectedImage } = state;
 
   const [konvaImage, setKonvaImage] = useState<HTMLImageElement | null>(null)
   const isDrawing = useRef(false)
   const stageRef = useRef<any>(null);
   
+  const filteredLines = useMemo(() => {
+    return lines.filter(line => line.imageId === selectedImage?.id);
+  }, [lines, selectedImage]);
+  
+  const filteredPolygons = useMemo(() => {
+    return polygons.filter(poly => poly.imageId === selectedImage?.id);
+  }, [polygons, selectedImage]);
+
 
   useEffect(() => {
-    if (!image.file) return;
-
+    if (!selectedImage || !selectedImage.file ) return;
     const img = new window.Image();
-    img.src = image.file;
+    img.src = selectedImage.file;
     img.onload = () => {
       setKonvaImage(img);
     };
-  }, [image.file]);
+  }, [selectedImage]);
 
   useEffect(() => {
     if (stageRef.current) {
@@ -30,11 +36,12 @@ const CanvasArea = forwardRef((props, ref) => {
   }, [setCanvasRef]);
   
   useEffect(() => {
-    if (image.dimensions.width && image.dimensions.height) {
+    if (selectedImage?.dimensions.width && selectedImage?.dimensions.height) {
       const { brushMasks, polygonMasks } = getPixelData();
       setBrushMasks(brushMasks);
       setPolygonMasks(polygonMasks);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lines, polygons]);
 
   const handleBrushMouseDown = (e: any) => {
@@ -46,7 +53,6 @@ const CanvasArea = forwardRef((props, ref) => {
     const stage = e.target.getStage()
     const point = stage.getPointerPosition()
     const categoryId = activeTool === 'eraser' ? 0 : activeClass?.id
-    console.log('categoryId', categoryId)
     // Start a new line
     dispatch({
       type: 'ADD_BRUSH_LINE',
@@ -55,7 +61,8 @@ const CanvasArea = forwardRef((props, ref) => {
         color: activeClass?.color || '#9C27B0',
         strokeWidth: brushSize || 4,
         categoryId,
-        erase: activeTool === "eraser"
+        erase: activeTool === "eraser",
+        imageId: selectedImage?.id,
       }
     });
   };
@@ -117,7 +124,8 @@ const CanvasArea = forwardRef((props, ref) => {
         payload: {
           points: tempPoints,
           categoryId: activeClass?.id,
-          color: activeClass?.color || '#9C27B0'
+          color: activeClass?.color || '#9C27B0',
+          imageId: selectedImage?.id,
         }
       });
       // Reset tempPoints for a new polygon
@@ -128,14 +136,12 @@ const CanvasArea = forwardRef((props, ref) => {
   }  
 
   const getPixelData = (): { brushMasks: ImageData[], polygonMasks: ImageData[] } => {
-    console.log("📌 getPixelData() called!");
-
-    if (!image.dimensions) {
+    if (!selectedImage?.dimensions) {
       console.warn("⚠️ Image dimensions are not set!");
       return { brushMasks: [], polygonMasks: [] };
     }
 
-    const { width, height } = image.dimensions;
+    const { width, height } = selectedImage.dimensions;
 
     // Render brush strokes
     const brushMasks = lines.map((line) => renderBrushStrokeToCanvas(line, width, height));
@@ -196,8 +202,8 @@ const CanvasArea = forwardRef((props, ref) => {
     <CanvasContainer>
       <Stage
         ref={stageRef}
-        width={image.dimensions.width}
-        height={image.dimensions.height}
+        width={selectedImage?.dimensions.width}
+        height={selectedImage?.dimensions.height}
         style={{ border: '1px solid #ccc' }}
         onMouseDown={handleBrushMouseDown}
         onMouseMove={handleBrushMouseMove}
@@ -210,13 +216,13 @@ const CanvasArea = forwardRef((props, ref) => {
               image={konvaImage}
               x={0}
               y={0}
-              width={image.dimensions.width}
-              height={image.dimensions.height}
+              width={selectedImage?.dimensions.width}
+              height={selectedImage?.dimensions.height}
             />
           )}
         </Layer>
         <Layer>
-          {lines.map((line, i) => (
+          {filteredLines.map((line, i) => (
           <Line
             key={i}
             points={line.points}
@@ -229,7 +235,7 @@ const CanvasArea = forwardRef((props, ref) => {
             globalCompositeOperation= { line.erase ? 'destination-out' : 'source-over' }
           />
         ))}
-        {polygons.map((poly, i) => (
+        {filteredPolygons.map((poly, i) => (
           <Line
             key={i}
             points={poly.points}
@@ -280,8 +286,9 @@ const CanvasArea = forwardRef((props, ref) => {
 export default CanvasArea;
 
 const CanvasContainer = styled.div`
-  width: 600px;
-  height: 500px;
+  max-width: 700px;
+  width: fit-content;
+  height: fit-content;
   border: 2px solid #000;
 
   @media (max-width: 430px) {

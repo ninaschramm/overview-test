@@ -2,22 +2,28 @@ import { Stage } from "konva/lib/Stage";
 import React, { createContext, useReducer, useContext, useRef, useState } from "react";
 
 // Define types
-interface ImageFile {
+export interface ImageFile {
+  id: number;
   file: string | null;
   dimensions: { width: number; height: number };
+  name?: string;
 }
 
 interface Polygon {
+  id: number;
+  imageId: number;
   points: number[];
   rle: number[]; // RLE-encoded binary mask
   width: number;
   height: number;
-  bbox: [number, number, number, number]; // Bounding box [x, y, width, height]
+  // bbox: [number, number, number, number]; // Bounding box [x, y, width, height]
   categoryId: number;
   color: string;
 }
 
 interface BrushLine {
+  id: number;
+  imageId: number;
   erase: any;
   points: number[];
   color: string;
@@ -32,7 +38,7 @@ interface Class {
 }
 
 // For testing purposes
-const SAMPLE_IMAGE = "https://images.ctfassets.net/8j5aqoy0ts8s/6z7MzieJ83Qz6MYqTRGGC6/7f925f3ab696ab8aab84a120846f34fb/saturated-colors-960px_3x.png";
+// const SAMPLE_IMAGE = "https://images.ctfassets.net/8j5aqoy0ts8s/6z7MzieJ83Qz6MYqTRGGC6/7f925f3ab696ab8aab84a120846f34fb/saturated-colors-960px_3x.png";
 
 const PREDEFINED_CLASSES: Class[] = [
   { name: 'Car', color: '#ff0000', id: 1 },
@@ -48,8 +54,8 @@ interface AnnotationState {
   activeTool: string;
   brushSize: number;
   activeClass: Class | null;
-  image: ImageFile;
-  // etc.
+  images: ImageFile[];
+  selectedImage: ImageFile | null;
   historyStack: Array<{
     polygons: Polygon[];
     lines: BrushLine[];
@@ -74,16 +80,22 @@ type Action =
   | { type: "SET_ACTIVE_CLASS"; payload: Class | null }
   | { type: "UNDO" }
   | { type: "REDO" }
-  | { type: "SET_TEMP_POINTS"; payload: number[] };
+  | { type: "SET_TEMP_POINTS"; payload: number[] }
+  | { type: "ADD_IMAGE"; payload: ImageFile }
+  | { type: "SET_SELECTED_IMAGE"; payload: ImageFile | null }
+  | { type: "REMOVE_IMAGE"; payload: string }
+  | { type: "ADD_CLASS"; payload: Class }
+  | { type: "REMOVE_CLASS"; payload: number };
 
-const log = console.log
 // Reducer function to update the state
 const annotationReducer = (state: AnnotationState, action: Action): AnnotationState => {
   switch (action.type) {
-    case "SET_IMAGE":
-      return { ...state, image: action.payload };
     case "ADD_POLYGON": {
-      const newPolygon = action.payload; // { points, color, categoryId }
+      const newPolygon = {
+        ...action.payload,
+        id: state.polygons.length + state.lines.length + 1,
+      };
+
       const oldSnapshot = {
         polygons: [...state.polygons],
         lines: [...state.lines],
@@ -98,7 +110,10 @@ const annotationReducer = (state: AnnotationState, action: Action): AnnotationSt
       };
     }      
     case "ADD_BRUSH_LINE":
-      const newLine = action.payload; // { points, color, strokeWidth, categoryId }
+      const newLine = {
+        ...action.payload,
+        id: state.polygons.length + state.lines.length + 1,
+      };
       const oldSnapshot = {
         polygons: [...state.polygons],
         lines: [...state.lines],
@@ -159,11 +174,20 @@ const annotationReducer = (state: AnnotationState, action: Action): AnnotationSt
     //     redoStack: state.redoStack.slice(1), // Remove used redo state
     //   };
     case "SET_TEMP_POINTS":
-      log("SET_TEMP_POINTS", action.payload)
       return {
         ...state,
         tempPoints: action.payload
       };
+    case "ADD_IMAGE":
+      return { ...state, images: [...state.images, action.payload] };
+    case "SET_SELECTED_IMAGE":
+      return { ...state, selectedImage: action.payload }; 
+    case "REMOVE_IMAGE":
+      return { ...state, images: state.images.filter(img => img.file !== action.payload) };
+    case "ADD_CLASS":
+      return { ...state, classes: [...state.classes, action.payload] };
+    case "REMOVE_CLASS":
+      return { ...state, classes: state.classes.filter(cls => cls.id !== action.payload) };
     default:
       return state;
   }
@@ -191,9 +215,9 @@ export const AnnotationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
   const [brushMasks, setBrushMasks] = useState<ImageData[]>([])
   const [polygonMasks, setPolygonMasks] = useState<ImageData[]>([])
-  console.log("🛠️ ExportPage canvasRef:", canvasRef); // Check if it's being created
   const [state, dispatch] = useReducer(annotationReducer, {
-    image: { file: SAMPLE_IMAGE, dimensions: { width: 600, height: 400 } },
+    images: [],
+    selectedImage: null,
     polygons: [],
     lines: [],
     classes: PREDEFINED_CLASSES,
