@@ -1,4 +1,5 @@
-import React, { createContext, useReducer, useContext } from "react";
+import { Stage } from "konva/lib/Stage";
+import React, { createContext, useReducer, useContext, useRef, useState } from "react";
 
 // Define types
 interface ImageFile {
@@ -8,11 +9,16 @@ interface ImageFile {
 
 interface Polygon {
   points: number[];
+  rle: number[]; // RLE-encoded binary mask
+  width: number;
+  height: number;
+  bbox: [number, number, number, number]; // Bounding box [x, y, width, height]
   categoryId: number;
   color: string;
 }
 
 interface BrushLine {
+  erase: any;
   points: number[];
   color: string;
   strokeWidth: number;
@@ -41,6 +47,8 @@ interface AnnotationState {
   tempPoints: number[];
   activeTool: string;
   brushSize: number;
+  activeClass: Class | null;
+  image: ImageFile;
   // etc.
   historyStack: Array<{
     polygons: Polygon[];
@@ -50,6 +58,7 @@ interface AnnotationState {
     polygons: Polygon[];
     lines: BrushLine[];
   }>;
+  classes: Class[];
 }
 
 
@@ -73,22 +82,21 @@ const annotationReducer = (state: AnnotationState, action: Action): AnnotationSt
   switch (action.type) {
     case "SET_IMAGE":
       return { ...state, image: action.payload };
-      case "ADD_POLYGON": {
-        // Actually let's call it "FINISH_POLYGON" for clarity
-        const newPolygon = action.payload; // { points, color, categoryId }
-        const oldSnapshot = {
-          polygons: [...state.polygons],
-          lines: [...state.lines],
-        };
-      
-        return {
-          ...state,
-          polygons: [...state.polygons, newPolygon],
-          tempPoints: [],
-          redoStack: [],
-          historyStack: [...state.historyStack, oldSnapshot], // store old annotation data
-        };
-      }      
+    case "ADD_POLYGON": {
+      const newPolygon = action.payload; // { points, color, categoryId }
+      const oldSnapshot = {
+        polygons: [...state.polygons],
+        lines: [...state.lines],
+      };
+    
+      return {
+        ...state,
+        polygons: [...state.polygons, newPolygon],
+        tempPoints: [],
+        redoStack: [],
+        historyStack: [...state.historyStack, oldSnapshot], // store old annotation data
+      };
+    }      
     case "ADD_BRUSH_LINE":
       const newLine = action.payload; // { points, color, strokeWidth, categoryId }
       const oldSnapshot = {
@@ -138,18 +146,18 @@ const annotationReducer = (state: AnnotationState, action: Action): AnnotationSt
     
       return state;
     }
-    case "REDO":
-      if (state.redoStack.length === 0) return state; // No redo available
+    // case "REDO":
+    //   if (state.redoStack.length === 0) return state; // No redo available
 
-      const nextAnnotationData = state.redoStack[0]; // Get the next saved annotation state
+    //   const nextAnnotationData = state.redoStack[0]; // Get the next saved annotation state
 
-      return {
-        ...state,
-        polygons: nextAnnotationData.polygons,
-        lines: nextAnnotationData.lines,
-        historyStack: [...state.historyStack, { polygons: state.polygons, lines: state.lines }], // Save current state
-        redoStack: state.redoStack.slice(1), // Remove used redo state
-      };
+    //   return {
+    //     ...state,
+    //     polygons: nextAnnotationData.polygons,
+    //     lines: nextAnnotationData.lines,
+    //     historyStack: [...state.historyStack, { polygons: state.polygons, lines: state.lines }], // Save current state
+    //     redoStack: state.redoStack.slice(1), // Remove used redo state
+    //   };
     case "SET_TEMP_POINTS":
       log("SET_TEMP_POINTS", action.payload)
       return {
@@ -163,11 +171,27 @@ const annotationReducer = (state: AnnotationState, action: Action): AnnotationSt
 
 // Create context
 const AnnotationContext = createContext<
-  { state: AnnotationState; dispatch: React.Dispatch<Action> } | undefined
+  { 
+    state: AnnotationState;
+    dispatch: React.Dispatch<Action>;
+    canvasRef: React.RefObject<Stage | null>;
+    setCanvasRef: (ref: React.RefObject<Stage | null>) => void;
+    brushMasks: ImageData[]; // Add brushMasks
+    polygonMasks: ImageData[]; // Add polygonMasks
+    setBrushMasks: (masks: ImageData[]) => void; // Add setBrushMasks
+    setPolygonMasks: (masks: ImageData[]) => void; // Add setPolygonMasks
+  } | undefined
 >(undefined);
 
 // Provider component
 export const AnnotationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const canvasRef = useRef<Stage | null>(null);
+  const setCanvasRef = (ref: any) => {
+    canvasRef.current = ref.current;
+  };
+  const [brushMasks, setBrushMasks] = useState<ImageData[]>([])
+  const [polygonMasks, setPolygonMasks] = useState<ImageData[]>([])
+  console.log("🛠️ ExportPage canvasRef:", canvasRef); // Check if it's being created
   const [state, dispatch] = useReducer(annotationReducer, {
     image: { file: SAMPLE_IMAGE, dimensions: { width: 600, height: 400 } },
     polygons: [],
@@ -178,10 +202,10 @@ export const AnnotationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     activeClass: PREDEFINED_CLASSES[0] || null,
     historyStack: [],
     redoStack: [],
-    tempPoints: []
+    tempPoints: [],
   });
 
-  return <AnnotationContext.Provider value={{ state, dispatch }}>{children}</AnnotationContext.Provider>;
+  return <AnnotationContext.Provider value={{ state, dispatch, canvasRef, setCanvasRef, brushMasks, setBrushMasks, polygonMasks, setPolygonMasks }}>{children}</AnnotationContext.Provider>;
 };
 
 // Custom hook to use the context

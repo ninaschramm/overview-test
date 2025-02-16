@@ -1,8 +1,13 @@
-const generateCOCO = (imageFile, imageDimensions, polygons, classes, lines) => {
-  // For a minimal test, let's assume:
-  // - We have a single "image" (id=1)
+import { convertToRLE } from "./RLEUtils.ts";
 
-  // COCO JSON format: https://cocodataset.org/#format-data
+const generateCOCO = (imageFile, imageDimensions, polygons, classes, lines, brushMasks, polygonMasks) => {
+  if (!brushMasks || !polygonMasks) {
+    console.error("❌ Missing brushMasks or polygonMasks!");
+    return null;
+  }
+
+  console.log("✅ Pixel data retrieved successfully! Proceeding with COCO export...");
+
   const cocoJson = {
     info: {
       description: "Test dataset",
@@ -40,53 +45,66 @@ const generateCOCO = (imageFile, imageDimensions, polygons, classes, lines) => {
       }
     })
   }
-  
+  // Convert Polygons → RLE
   const polygonAnnotations = polygons.map((poly, index) => {
+    console.log('poly maks :', polygonMasks)
+    const mask = polygonMasks[index]; // Get the mask for this polygon
+    const { rle, bbox, area } = convertToRLE(mask);
+
     return {
-      id: index + 1, // Start IDs from 1
+      id: index + 1,
       image_id: 1,
       category_id: poly.categoryId,
-      segmentation: [poly.points], // array of arrays
-      area: 0,
-      bbox: calculateBoundingBox(poly.points),
-      iscrowd: 0
-    }
-  })
+      segmentation: rle,
+      area: area,
+      bbox: bbox,
+      iscrowd: 0,
+    };
+  });
 
-  const brushAnnotations = lines.map((line, index) => {
-    return {
-        id: polygons.length + index + 1, // Continue IDs from polygons
+  // Convert Brush Strokes → RLE
+  const brushAnnotations = lines
+    .filter((line) => line.categoryId !== 0) // Ignore eraser strokes
+    .map((line, index) => {
+      const mask = brushMasks[index]; // Get the mask for this brush stroke
+      const { rle, bbox, area } = convertToRLE(mask);
+
+      return {
+        id: polygons.length + index + 1, // Continue IDs after polygons
         image_id: 1,
         category_id: line.categoryId,
-        segmentation: [line.points],  // Lines are open paths
-        area: 0,
-        bbox: calculateBoundingBox(line.points),
-        iscrowd: 0
-      }
-  })
+        segmentation: { counts: rle, size: [imageDimensions.height, imageDimensions.width] },
+        area,
+        bbox,
+        iscrowd: 0,
+      };
+    });
 
-  cocoJson.annotations = polygonAnnotations.concat(brushAnnotations)
+  const filteredAnnotations = filterErasedAnnotations(brushAnnotations, lines);
 
-  console.log("COCO Output:", JSON.stringify(cocoJson, null, 2))
+  cocoJson.annotations = polygonAnnotations.concat(filteredAnnotations);
+
+  console.log("COCO Output:", JSON.stringify(cocoJson, null, 2));
   return cocoJson;
-}
+};
 
-const calculateBoundingBox = (points: number[]): [number, number, number, number] => {
-  const { minX, maxX, minY, maxY } = points.reduce(
-    (acc, val, index) => {
-      if (index % 2 === 0) { // X values
-        acc.minX = acc.minX === null || val < acc.minX ? val : acc.minX;
-        acc.maxX = acc.maxX === null || val > acc.maxX ? val : acc.maxX;
-      } else { // Y values
-        acc.minY = acc.minY === null || val < acc.minY ? val : acc.minY;
-        acc.maxY = acc.maxY === null || val > acc.maxY ? val : acc.maxY;
-      }
-      return acc;
-    },
-    { minX: null, maxX: null, minY: null, maxY: null }
-  );
+const filterErasedAnnotations = (annotations, lines) => {
+  // Get all eraser stroke points
+  const erasedPoints = lines
+    .filter(line => line.categoryId === 0)
+    .flatMap(line => line.points);
 
-  return [minX!, minY!, maxX! - minX!, maxY! - minY!]; // Ensure correct bbox format
+  return annotations.map(annotation => {
+    // Remove any points that exist in erasedPoints
+    const filteredPoints = annotation.segmentation[0].filter((point, index) => {
+      if (index % 2 !== 0) return true; // Skip Y values, we only check X once
+      const x = point;
+      const y = annotation.segmentation[0][index + 1];
+      return !erasedPoints.some((p, i) => i % 2 === 0 && p === x && erasedPoints[i + 1] === y);
+    });
+
+    return { ...annotation, segmentation: [filteredPoints] };
+  });
 };
 
 export default generateCOCO

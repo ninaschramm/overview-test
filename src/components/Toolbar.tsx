@@ -36,7 +36,7 @@ const Toolbar: React.FC = () => {
         >
           <DeleteIcon />
         </IconButton>
-        {activeTool === 'brush' && (
+        {(activeTool === 'brush' || activeTool === 'eraser') && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <label>Brush Size</label>
             <Slider

@@ -3,10 +3,25 @@ import { useAnnotation } from "../context/AnnotationContext.tsx";
 import generateCOCO from "../utils/cocoExport.ts";
 
 const ExportButton: React.FC = () => {
-  const { state } = useAnnotation();
+  const { state, canvasRef, brushMasks, polygonMasks } = useAnnotation();
+
+  if (!brushMasks || !polygonMasks) {
+    console.error("❌ Missing brushMasks or polygonMasks!");
+    return;
+  }
+
 
   const handleExport = () => {
-    const cocoJson = generateCOCO(state.image.file, state.image.dimensions, state.polygons, state.classes, state.lines);
+    console.log("📌 ExportButton canvasRef.current:", canvasRef.current);
+    const cocoJson = generateCOCO(
+      state.image.file,
+      state.image.dimensions,
+      state.polygons,
+      state.classes,
+      state.lines,
+      brushMasks,
+      polygonMasks
+    );
     if (!cocoJson) return;
 
     // Convert JSON to file and download

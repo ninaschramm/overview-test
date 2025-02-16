@@ -1,16 +1,17 @@
-import React, { useRef, useEffect, useState, JSX } from 'react'
+import React, { useRef, useEffect, useState, JSX, useImperativeHandle, forwardRef } from 'react'
 import { Stage, Layer, Image as KonvaImage, Line, Circle } from 'react-konva'
 import styled from 'styled-components'
 import { useAnnotation } from '../context/AnnotationContext.tsx'
 
-const CanvasArea: React.FC = () => {
-  const { state, dispatch } = useAnnotation()
+const CanvasArea = forwardRef((props, ref) => {
+  console.log("🛠️ CanvasArea received ref:", ref);
+  const { state, dispatch, setCanvasRef, setBrushMasks, setPolygonMasks } = useAnnotation()
   const { image, activeTool, activeClass, brushSize, lines, polygons, tempPoints } = state;
 
   const [konvaImage, setKonvaImage] = useState<HTMLImageElement | null>(null)
-  const [isDrawing, setIsDrawing] = useState(false)
-
-  const stageRef = useRef<any>(null)
+  const isDrawing = useRef(false)
+  const stageRef = useRef<any>(null);
+  
 
   useEffect(() => {
     if (!image.file) return;
@@ -22,15 +23,30 @@ const CanvasArea: React.FC = () => {
     };
   }, [image.file]);
 
-  const handleBrushMouseDown = (e: any) => {
-    if (activeTool !== 'brush') return // Only draw if tool is "brush"
+  useEffect(() => {
+    if (stageRef.current) {
+      setCanvasRef(stageRef);
+    }
+  }, [setCanvasRef]);
   
-    setIsDrawing(true)
+  useEffect(() => {
+    if (image.dimensions.width && image.dimensions.height) {
+      const { brushMasks, polygonMasks } = getPixelData();
+      setBrushMasks(brushMasks);
+      setPolygonMasks(polygonMasks);
+    }
+  }, [lines, polygons]);
+
+  const handleBrushMouseDown = (e: any) => {
+    if (activeTool !== 'brush' && activeTool !== 'eraser') return // Only draw if tool is "brush"
+  
+    isDrawing.current = true
   
     // Get current pointer position
     const stage = e.target.getStage()
     const point = stage.getPointerPosition()
-  
+    const categoryId = activeTool === 'eraser' ? 0 : activeClass?.id
+    console.log('categoryId', categoryId)
     // Start a new line
     dispatch({
       type: 'ADD_BRUSH_LINE',
@@ -38,13 +54,14 @@ const CanvasArea: React.FC = () => {
         points: [point.x, point.y],
         color: activeClass?.color || '#9C27B0',
         strokeWidth: brushSize || 4,
-        categoryId: activeClass?.id
+        categoryId,
+        erase: activeTool === "eraser"
       }
     });
   };
 
   const handleBrushMouseMove = (e: any) => {
-    if (!isDrawing || activeTool !== 'brush') return
+    if (!isDrawing.current || (activeTool !== "brush" && activeTool !== "eraser")) return
   
     const stage = e.target.getStage()
     const point = stage.getPointerPosition()
@@ -53,7 +70,7 @@ const CanvasArea: React.FC = () => {
     const lastLine = lines[lines.length - 1]
     // Add the new point
     if (!lastLine) return;
-
+    
     // Add the new point (keeping categoryId)
     const updatedLine = {
       ...lastLine,
@@ -65,9 +82,7 @@ const CanvasArea: React.FC = () => {
   }
   
   const handleBrushMouseUp = () => {
-    if (activeTool === 'brush') {
-      setIsDrawing(false)
-    }
+    isDrawing.current = false
   }
 
   const handlePolygonClick = (e: any) => {
@@ -112,7 +127,71 @@ const CanvasArea: React.FC = () => {
     }
   }  
 
+  const getPixelData = (): { brushMasks: ImageData[], polygonMasks: ImageData[] } => {
+    console.log("📌 getPixelData() called!");
 
+    if (!image.dimensions) {
+      console.warn("⚠️ Image dimensions are not set!");
+      return { brushMasks: [], polygonMasks: [] };
+    }
+
+    const { width, height } = image.dimensions;
+
+    // Render brush strokes
+    const brushMasks = lines.map((line) => renderBrushStrokeToCanvas(line, width, height));
+
+    // Render polygons
+    const polygonMasks = polygons.map((poly) => renderPolygonToCanvas(poly, width, height));
+
+    console.log("✅ Converted to masks:", { brushMasks, polygonMasks });
+
+    return { brushMasks, polygonMasks };
+  };
+
+  const renderBrushStrokeToCanvas = (line: any, width: number, height: number): ImageData => {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const ctx = tempCanvas.getContext('2d');
+  
+    if (!ctx) throw new Error("Could not get canvas context");
+  
+    // Draw the brush stroke
+    ctx.beginPath();
+    ctx.moveTo(line.points[0], line.points[1]);
+    for (let i = 2; i < line.points.length; i += 2) {
+      ctx.lineTo(line.points[i], line.points[i + 1]);
+    }
+    ctx.strokeStyle = line.color;
+    ctx.lineWidth = line.strokeWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  
+    return ctx.getImageData(0, 0, width, height);
+  };
+  
+  const renderPolygonToCanvas = (poly: any, width: number, height: number): ImageData => {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const ctx = tempCanvas.getContext('2d');
+  
+    if (!ctx) throw new Error("Could not get canvas context");
+  
+    // Draw the polygon
+    ctx.beginPath();
+    ctx.moveTo(poly.points[0], poly.points[1]);
+    for (let i = 2; i < poly.points.length; i += 2) {
+      ctx.lineTo(poly.points[i], poly.points[i + 1]);
+    }
+    ctx.closePath();
+    ctx.fillStyle = poly.color;
+    ctx.fill();
+  
+    return ctx.getImageData(0, 0, width, height);
+  };
+  
   return (
     <CanvasContainer>
       <Stage
@@ -135,6 +214,8 @@ const CanvasArea: React.FC = () => {
               height={image.dimensions.height}
             />
           )}
+        </Layer>
+        <Layer>
           {lines.map((line, i) => (
           <Line
             key={i}
@@ -144,7 +225,8 @@ const CanvasArea: React.FC = () => {
             tension={0.5}
             lineCap="round"
             lineJoin="round"
-            opacity={0.5}
+            opacity={line.erase ? 1 : 0.5} 
+            globalCompositeOperation= { line.erase ? 'destination-out' : 'source-over' }
           />
         ))}
         {polygons.map((poly, i) => (
@@ -193,9 +275,9 @@ const CanvasArea: React.FC = () => {
       </Stage>
     </CanvasContainer>
   )
-}
+})
 
-export default CanvasArea
+export default CanvasArea;
 
 const CanvasContainer = styled.div`
   width: 600px;
