@@ -1,6 +1,8 @@
 import React from "react";
 import { useAnnotation } from "../context/AnnotationContext.tsx";
 import generateCOCO from "../utils/cocoExport.ts";
+import { Button } from "@mui/material";
+import styled from "styled-components";
 
 const ExportButton: React.FC = () => {
   const { state } = useAnnotation();
@@ -117,7 +119,25 @@ const ExportButton: React.FC = () => {
     a.click();
   };
 
-  return <button onClick={handleExport}>Export to COCO</button>;
+  return <StyledButton 
+    variant="contained" 
+    color="primary" 
+    onClick={handleExport}
+  >
+    Export to COCO
+  </StyledButton>
 };
 
 export default ExportButton;
+
+const StyledButton = styled(Button)`
+  width: 280px; /* Default button width */
+  padding: 10px 20px;
+  margin-top: 0, 20px !important; /* Override MUI margin */
+
+  @media (max-width: 600px) {
+    width: 100%; /* Full width on small screens */
+    margin: 0, 10px !important; /* Override MUI margin */
+  }
+`;
+

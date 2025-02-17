@@ -34,15 +34,6 @@ const CanvasArea = forwardRef((props, ref) => {
       setCanvasRef(stageRef);
     }
   }, [setCanvasRef]);
-  
-  // useEffect(() => {
-  //   if (selectedImage?.dimensions.width && selectedImage?.dimensions.height) {
-  //     const { polygonMasks, brushMasks } = getPixelData();
-  //     setPolygonMasks(polygonMasks);
-  //     setBrushMasks(brushMasks);
-  //   }
-  // // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [polygons, lines]);
 
   const handleBrushMouseDown = (e: any) => {
     if (activeTool !== 'brush' && activeTool !== 'eraser') return // Only draw if tool is "brush"
@@ -142,11 +133,15 @@ const CanvasArea = forwardRef((props, ref) => {
         ref={stageRef}
         width={selectedImage?.dimensions.width}
         height={selectedImage?.dimensions.height}
-        style={{ border: '1px solid #ccc' }}
+        style={{ overflow: "auto", touchAction: "none" }} // Prevents default scrolling
         onMouseDown={handleBrushMouseDown}
         onMouseMove={handleBrushMouseMove}
         onMouseUp={handleBrushMouseUp}
         onClick={handlePolygonClick}
+        onTouchStart={handleBrushMouseDown}
+        onTouchMove={handleBrushMouseMove}
+        onTouchEnd={handleBrushMouseUp}
+        onTap={handlePolygonClick}
       >
         <Layer>
           {konvaImage && (
@@ -228,8 +223,9 @@ const CanvasContainer = styled.div`
   width: fit-content;
   height: fit-content;
   border: 2px solid #000;
+  overflow: auto !important;
 
   @media (max-width: 430px) {
-    width: 100%;
+    width: 100% !important;
   }
 `

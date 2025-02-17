@@ -2,8 +2,9 @@ import React, { useRef, useState } from "react";
 import { useAnnotation } from "../context/AnnotationContext.tsx";
 import { processUploadedImages } from "../utils/fileHandler.ts";
 import { Box, Button, Typography, IconButton } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
 import ConfirmationDialog from "./ConfirmationDialog.tsx";
+import styled from "styled-components";
+import CloseIcon from "@mui/icons-material/Close";
 
 const ImageUploader: React.FC = () => {
   const { dispatch, state } = useAnnotation();
@@ -56,10 +57,6 @@ const ImageUploader: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Upload Images
-      </Typography>
-
       {/* Hidden File Input */}
       <input
         type="file"
@@ -76,45 +73,28 @@ const ImageUploader: React.FC = () => {
       </Button>
 
       {/* Display Uploaded Images */}
-      <Box display="flex" flexWrap="wrap" mt={2}>
-        {Array.isArray(state.images) ? (
-          state.images.length > 0 ? (
-            state.images.map((img) => (
-              <Box 
-                key={img.id} 
-                mr={2} 
-                mb={2} 
-                border={1} 
-                borderRadius={2} 
-                p={1} 
-                position="relative"
-              >
-                {/* Delete Button (X) */}
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleDeleteClick(img.id)}
-                  style={{ position: "absolute", top: 0, right: 0 }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+      <StyledImageContainer>
+        {state.images.length > 0 ? (
+          state.images.map((img) => (
+            <StyledImageBox key={img.id}>
+              {/* Delete Button (X) */}
+              <StyledDeleteButton onClick={() => handleDeleteClick(img.id)}>
+                <CloseIcon fontSize="small" />
+              </StyledDeleteButton>
 
-                {/* Image Preview */}
-                <img src={img.file} alt={`Preview ${img.id}`} width="100" />
-                <Typography variant="caption">{img.name}</Typography>
-              </Box>
-            ))
-          ) : (
-            <Typography variant="caption" color="warning">
-              No images uploaded yet.
-            </Typography>
-          )
+              {/* Image Preview */}
+              <StyledImage src={img.file} alt={`Preview ${img.id}`} />
+
+              {/* Filename */}
+              <StyledFilename>{img.name}</StyledFilename>
+            </StyledImageBox>
+          ))
         ) : (
-          <Typography variant="caption" color="error">
-            ⚠️ Images data is invalid!
+          <Typography variant="caption" color="warning">
+            No images uploaded yet.
           </Typography>
         )}
-      </Box>
+      </StyledImageContainer>
 
       {/* Confirmation Dialog */}
       <ConfirmationDialog
@@ -128,3 +108,52 @@ const ImageUploader: React.FC = () => {
 };
 
 export default ImageUploader;
+
+const StyledImageContainer = styled(Box)`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+`;
+
+const StyledImageBox = styled(Box)`
+  position: relative;
+  width: 240px; /* Consistent size */
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f8f8;
+`;
+
+const StyledDeleteButton = styled(IconButton)`
+  position: absolute !important;
+  top: 4px;
+  right: 4px;
+  background-color: #e2e2e2 !important;
+  font-size: 0.75rem !important;
+  padding: 4px !important;
+`;
+
+const StyledImage = styled.img`
+  width: 100%;
+  height: auto;
+  flex-grow: 1;
+  object-fit: cover;
+`;
+
+const StyledFilename = styled(Typography)`
+  position: absolute;
+  bottom: 0;
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  background: #ffffff;
+`;

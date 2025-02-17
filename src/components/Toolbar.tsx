@@ -1,66 +1,92 @@
-// Toolbar.tsx (using MUI)
-import React from 'react'
-import { IconButton } from '@mui/material'
-import BrushIcon from '@mui/icons-material/Brush'
-import PolylineIcon from '@mui/icons-material/Polyline'
-import DeleteIcon from '@mui/icons-material/Delete'
-import UndoIcon from '@mui/icons-material/Undo'
-// import RedoIcon from '@mui/icons-material/Redo'
-import { Slider } from '@mui/material'
-import { useAnnotation } from '../context/AnnotationContext.tsx'
-
-
+import React from "react";
+import { Slider } from "@mui/material";
+import { Brush as BrushIcon, Polyline as PolylineIcon, Undo as UndoIcon } from "@mui/icons-material";
+import { RiEraserLine } from "react-icons/ri";
+import { useAnnotation } from "../context/AnnotationContext.tsx";
+import styled from "styled-components";
 
 const Toolbar: React.FC = () => {
-  const { state, dispatch } = useAnnotation()
-  const { activeTool, brushSize } = state
+  const { state, dispatch } = useAnnotation();
+  const { activeTool, brushSize } = state;
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <IconButton 
-          color={activeTool === 'brush' ? 'primary' : 'default'}
-          onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', payload: 'brush' })}
-        >
-          <BrushIcon />
-        </IconButton>
-        <IconButton 
-          color={activeTool === 'polygon' ? 'primary' : 'default'}
-          onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', payload: 'polygon' })}
+    <StyledContainer>
+      <StyledToolbar>
+        {/* Tools */}
+        <ToolButton
+          active={activeTool === "polygon"}
+          onClick={() => dispatch({ type: "SET_ACTIVE_TOOL", payload: "polygon" })}
         >
           <PolylineIcon />
-        </IconButton>
-        <IconButton 
-          color={activeTool === 'eraser' ? 'primary' : 'default'}
-          onClick={() => dispatch({ type: 'SET_ACTIVE_TOOL', payload: 'eraser' })}
+        </ToolButton>
+        <ToolButton
+          active={activeTool === "brush"}
+          onClick={() => dispatch({ type: "SET_ACTIVE_TOOL", payload: "brush" })}
         >
-          <DeleteIcon />
-        </IconButton>
-        {(activeTool === 'brush' || activeTool === 'eraser') && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <label>Brush Size</label>
+          <BrushIcon />
+        </ToolButton>
+        <ToolButton
+          active={activeTool === "eraser"}
+          onClick={() => dispatch({ type: "SET_ACTIVE_TOOL", payload: "eraser" })}
+        >
+          <RiEraserLine size={24} />
+        </ToolButton>
+        <ToolButton onClick={() => dispatch({ type: "UNDO" })}>
+          <UndoIcon />
+        </ToolButton>
+      </StyledToolbar>
+        {/* Brush Size Slider (Only when using brush/eraser) */}
+        {(activeTool === "brush" || activeTool === "eraser") && (
+          <BrushSizeContainer>
             <Slider
               value={brushSize}
-              onChange={(e, val) => dispatch({ type: 'SET_BRUSH_SIZE', payload: val as number })}
+              onChange={(e, val) => dispatch({ type: "SET_BRUSH_SIZE", payload: val as number })}
               min={1}
               max={50}
               step={1}
               valueLabelDisplay="auto"
-              style={{ width: 100 }}
             />
-          </div>
+          </BrushSizeContainer>
         )}
-      </div>
-      <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-        <IconButton onClick={() => dispatch({ type: "UNDO" })}>
-          <UndoIcon />
-        </IconButton>
-        {/* <IconButton onClick={() => dispatch({ type: "REDO" })}>
-          <RedoIcon />
-        </IconButton> */}
-      </div>
-    </div>
-  )
-}
+    </StyledContainer>
+    );
+};
 
-export default Toolbar
+export default Toolbar;
+
+const StyledContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+`;
+
+const StyledToolbar = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: #d8d8d8; /* Dark gray background */
+  border-radius: 8px;
+  border: 1px solid #555;
+  width: fit-content;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+`;
+
+const ToolButton = styled.button<{ active?: boolean }>`
+  color: ${(props) => (props.active ? "#fff" : "#aaa")};
+  background-color: ${(props) => (props.active ? "#555" : "transparent")};
+  border: ${(props) => (props.active ? "2px solid #777" : "none")};
+  width: 40px;
+  height: 40px;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: #444;
+    color: white;
+  }
+`;
+
+const BrushSizeContainer = styled.div`
+  width: 100px;
+  display: flex;
+  align-items: center;
+`;

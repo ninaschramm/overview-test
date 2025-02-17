@@ -1,6 +1,6 @@
 import React from "react";
 import { useAnnotation } from "../context/AnnotationContext.tsx";
-import { Select, MenuItem, Box, SelectChangeEvent } from "@mui/material";
+import { Select, MenuItem, Box, SelectChangeEvent, InputLabel } from "@mui/material";
 
 const ImageSelector: React.FC = () => {
   const { state, dispatch } = useAnnotation();
@@ -14,14 +14,15 @@ const ImageSelector: React.FC = () => {
   };
   
   return (
-       <Box mb={2}>
+       <Box>
+        <InputLabel>Select an image:</InputLabel>
         <Select 
           value={state.selectedImage?.file || ""} 
           onChange={handleImageChange}
           >
           {images.map((img, index) => (
             <MenuItem key={index} value={img.file ?? ""}>
-              Image {index + 1}
+              { img.name }
             </MenuItem>
           ))}
         </Select>
