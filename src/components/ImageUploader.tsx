@@ -59,7 +59,6 @@ const ImageUploader: React.FC = () => {
         {Array.isArray(state.images) ? (
           state.images.length > 0 ? (
             state.images.map((img, index) => {
-              console.log("🖼️ Rendering image:", img);
               return (
                 <Box key={index} mr={2} mb={2} border={1} borderRadius={2} p={1}>
                   <img src={img.file} alt={`Preview ${index}`} width="100" />

@@ -1,4 +1,7 @@
-export const convertToRLE = (mask: ImageData, id): { rle: number[]; bbox: [number, number, number, number]; area: number } => {
+export const convertToRLE = (mask: ImageData): { rle: number[]; bbox: [number, number, number, number]; area: number } => {
+  if (!mask) {
+    return { rle: [], bbox: [0, 0, 0, 0], area: 0 };
+  }
   const width = mask.width;
   const data = mask.data;
 

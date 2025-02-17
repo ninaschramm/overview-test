@@ -4,7 +4,7 @@ import styled from 'styled-components'
 import { useAnnotation } from '../context/AnnotationContext.tsx'
 
 const CanvasArea = forwardRef((props, ref) => {
-  const { state, dispatch, setCanvasRef, setBrushMasks, setPolygonMasks } = useAnnotation()
+  const { state, dispatch, setCanvasRef } = useAnnotation()
   const { activeTool, activeClass, brushSize, lines, polygons, tempPoints, selectedImage } = state;
 
   const [konvaImage, setKonvaImage] = useState<HTMLImageElement | null>(null)
@@ -35,14 +35,14 @@ const CanvasArea = forwardRef((props, ref) => {
     }
   }, [setCanvasRef]);
   
-  useEffect(() => {
-    if (selectedImage?.dimensions.width && selectedImage?.dimensions.height) {
-      const { brushMasks, polygonMasks } = getPixelData();
-      setBrushMasks(brushMasks);
-      setPolygonMasks(polygonMasks);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lines, polygons]);
+  // useEffect(() => {
+  //   if (selectedImage?.dimensions.width && selectedImage?.dimensions.height) {
+  //     const { polygonMasks, brushMasks } = getPixelData();
+  //     setPolygonMasks(polygonMasks);
+  //     setBrushMasks(brushMasks);
+  //   }
+  // // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [polygons, lines]);
 
   const handleBrushMouseDown = (e: any) => {
     if (activeTool !== 'brush' && activeTool !== 'eraser') return // Only draw if tool is "brush"
@@ -135,69 +135,7 @@ const CanvasArea = forwardRef((props, ref) => {
     }
   }  
 
-  const getPixelData = (): { brushMasks: ImageData[], polygonMasks: ImageData[] } => {
-    if (!selectedImage?.dimensions) {
-      console.warn("⚠️ Image dimensions are not set!");
-      return { brushMasks: [], polygonMasks: [] };
-    }
 
-    const { width, height } = selectedImage.dimensions;
-
-    // Render brush strokes
-    const brushMasks = lines.map((line) => renderBrushStrokeToCanvas(line, width, height));
-
-    // Render polygons
-    const polygonMasks = polygons.map((poly) => renderPolygonToCanvas(poly, width, height));
-
-    console.log("✅ Converted to masks:", { brushMasks, polygonMasks });
-
-    return { brushMasks, polygonMasks };
-  };
-
-  const renderBrushStrokeToCanvas = (line: any, width: number, height: number): ImageData => {
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    const ctx = tempCanvas.getContext('2d');
-  
-    if (!ctx) throw new Error("Could not get canvas context");
-  
-    // Draw the brush stroke
-    ctx.beginPath();
-    ctx.moveTo(line.points[0], line.points[1]);
-    for (let i = 2; i < line.points.length; i += 2) {
-      ctx.lineTo(line.points[i], line.points[i + 1]);
-    }
-    ctx.strokeStyle = line.color;
-    ctx.lineWidth = line.strokeWidth;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-  
-    return ctx.getImageData(0, 0, width, height);
-  };
-  
-  const renderPolygonToCanvas = (poly: any, width: number, height: number): ImageData => {
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    const ctx = tempCanvas.getContext('2d');
-  
-    if (!ctx) throw new Error("Could not get canvas context");
-  
-    // Draw the polygon
-    ctx.beginPath();
-    ctx.moveTo(poly.points[0], poly.points[1]);
-    for (let i = 2; i < poly.points.length; i += 2) {
-      ctx.lineTo(poly.points[i], poly.points[i + 1]);
-    }
-    ctx.closePath();
-    ctx.fillStyle = poly.color;
-    ctx.fill();
-  
-    return ctx.getImageData(0, 0, width, height);
-  };
-  
   return (
     <CanvasContainer>
       <Stage

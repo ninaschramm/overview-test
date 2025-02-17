@@ -3,16 +3,102 @@ import { useAnnotation } from "../context/AnnotationContext.tsx";
 import generateCOCO from "../utils/cocoExport.ts";
 
 const ExportButton: React.FC = () => {
-  const { state, canvasRef, brushMasks, polygonMasks } = useAnnotation();
+  const { state } = useAnnotation();
+  const { selectedImage, lines, polygons } = state;
+
+  const getPixelData = (): { brushMasks: ImageData[], polygonMasks: ImageData[] } => {
+    console.log("📌 getPixelData() called!");
+  
+    if (!selectedImage?.dimensions) {
+      console.warn("⚠️ Image dimensions are not set!");
+      return { brushMasks: [], polygonMasks: [] };
+    }
+  
+    const { width, height } = selectedImage.dimensions;
+  
+    // Separate normal strokes and eraser strokes
+    const normalLines = lines.filter(line => !line.erase);
+    const erasedLines = lines.filter(line => line.erase);
+    console.log('erasedLines', erasedLines);
+  
+    // Render brush strokes with erasing applied
+    const brushMasks = normalLines.map((line) => renderBrushStrokeToCanvas(line, width, height, erasedLines));
+  
+    // Render polygons (no changes needed)
+    const polygonMasks = polygons.map((poly) => renderPolygonToCanvas(poly, width, height));
+  
+    console.log("✅ Converted to masks:", { brushMasks, polygonMasks });
+  
+    return { brushMasks, polygonMasks };
+  };
+  
+
+  const renderBrushStrokeToCanvas = (line: any, width: number, height: number, erasedLines: any[]): ImageData => {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const ctx = tempCanvas.getContext('2d');
+  
+    if (!ctx) throw new Error("Could not get canvas context");
+  
+    // Draw the brush stroke
+    ctx.beginPath();
+    ctx.moveTo(line.points[0], line.points[1]);
+    for (let i = 2; i < line.points.length; i += 2) {
+      ctx.lineTo(line.points[i], line.points[i + 1]);
+    }
+    ctx.strokeStyle = line.color;
+    ctx.lineWidth = line.strokeWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  
+    // Apply eraser strokes to remove pixels
+    erasedLines.forEach((eraseLine) => {
+      ctx.globalCompositeOperation = 'destination-out'; // Subtract pixels
+      ctx.beginPath();
+      ctx.moveTo(eraseLine.points[0], eraseLine.points[1]);
+      for (let i = 2; i < eraseLine.points.length; i += 2) {
+        ctx.lineTo(eraseLine.points[i], eraseLine.points[i + 1]);
+      }
+      ctx.strokeStyle = "rgba(0,0,0,1)"; // Erase with solid black
+      ctx.lineWidth = eraseLine.strokeWidth;
+      ctx.stroke();
+    });
+    console.log('ctx.getImageData(0, 0, width, height)', ctx.getImageData(0, 0, width, height));
+    return ctx.getImageData(0, 0, width, height);
+  };
+  
+  
+  const renderPolygonToCanvas = (poly: any, width: number, height: number): ImageData => {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const ctx = tempCanvas.getContext('2d');
+  
+    if (!ctx) throw new Error("Could not get canvas context");
+  
+    // Draw the polygon
+    ctx.beginPath();
+    ctx.moveTo(poly.points[0], poly.points[1]);
+    for (let i = 2; i < poly.points.length; i += 2) {
+      ctx.lineTo(poly.points[i], poly.points[i + 1]);
+    }
+    ctx.closePath();
+    ctx.fillStyle = poly.color;
+    ctx.fill();
+  
+    return ctx.getImageData(0, 0, width, height);
+  };
+  
+  const { brushMasks, polygonMasks } = getPixelData();
 
   if (!brushMasks || !polygonMasks) {
     console.error("❌ Missing brushMasks or polygonMasks!");
     return;
   }
 
-
   const handleExport = () => {
-    console.log("📌 ExportButton canvasRef.current:", canvasRef.current);
     const cocoJson = generateCOCO(
       state.images,
       state.polygons,

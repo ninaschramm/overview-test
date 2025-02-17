@@ -44,15 +44,16 @@ const generateCOCO = (images, polygons, classes, lines, brushMasks, polygonMasks
   // Convert Polygons → RLE
   const polygonAnnotations = polygons.map((poly, index) => {
     const mask = polygonMasks[index]; // Get the mask for this polygon
-    const { rle, bbox, area } = convertToRLE(mask, poly.id);
-    const polyBbox = calculateBoundingBoxFromPoints(poly.points);
-    const polyArea = calculatePolygonArea(poly.points);
+    const { rle, bbox, area } = convertToRLE(mask);
+    console.log('RLE for id:', poly.id, rle);
+    // const polyBbox = calculateBoundingBoxFromPoints(poly.points);
+    // const polyArea = calculatePolygonArea(poly.points);
 
-    // Running different calculations to test for accuracy
-    console.log('📦 Bounding box (x1, y1, x2, y2):', bbox);
-    console.log('📦 Bounding box from points (x, y, width, height):', polyBbox);
-    console.log('🔢 Area (number of object pixels):', area);
-    console.log('🔢 Area from points:', polyArea);
+      // Running different calculations to test for accuracy
+      // console.log('📦 Bounding box (x1, y1, x2, y2):', bbox);
+      // console.log('📦 Bounding box from points (x, y, width, height):', polyBbox);
+      // console.log('🔢 Area (number of object pixels):', area);
+      // console.log('🔢 Area from points:', polyArea);
 
     return {
       id: poly.id,
@@ -69,15 +70,16 @@ const generateCOCO = (images, polygons, classes, lines, brushMasks, polygonMasks
   const brushAnnotations = lines.map((line, index) => {
       const image = images.find((img) => img.id === line.imageId);
       const mask = brushMasks[index];
-      const { rle, bbox, area } = convertToRLE(mask, line.id);
-      const brushArea = calculateBrushArea(line.points, line.strokeWidth);
-      const brushBbox = calculateBrushBoundingBox(line.points, line.strokeWidth);
+      const { rle, bbox, area } = convertToRLE(mask);
+      console.log('RLE for id:', line.id, rle);
+      // const brushArea = calculateBrushArea(line.points, line.strokeWidth);
+      // const brushBbox = calculateBrushBoundingBox(line.points, line.strokeWidth);
       
-      // Running different calculations to test for accuracy
-      console.log('📦 Bounding box (x1, y1, x2, y2):', bbox);
-      console.log('📦 Bounding box from points (x, y, width, height):', brushBbox);
-      console.log('🔢 Area (number of object pixels):', area);
-      console.log('🔢 Area from points:', brushArea);
+      // // Running different calculations to test for accuracy
+      // console.log('📦 Bounding box (x1, y1, x2, y2):', bbox);
+      // console.log('📦 Bounding box from points (x, y, width, height):', brushBbox);
+      // console.log('🔢 Area (number of object pixels):', area);
+      // console.log('🔢 Area from points:', brushArea);
 
       return {
         id: line.id,
@@ -117,67 +119,67 @@ const generateCOCO = (images, polygons, classes, lines, brushMasks, polygonMasks
 // };
 
 // 🆕 Function: Calculate Area Using Shoelace Formula (For Polygons)
-const calculatePolygonArea = (points: number[]): number => {
-  let area = 0;
-  const n = points.length / 2;
+// export const calculatePolygonArea = (points: number[]): number => {
+//   let area = 0;
+//   const n = points.length / 2;
   
-  for (let i = 0; i < n; i++) {
-    const x1 = points[i * 2];
-    const y1 = points[i * 2 + 1];
-    const x2 = points[((i + 1) % n) * 2];
-    const y2 = points[((i + 1) % n) * 2 + 1];
+//   for (let i = 0; i < n; i++) {
+//     const x1 = points[i * 2];
+//     const y1 = points[i * 2 + 1];
+//     const x2 = points[((i + 1) % n) * 2];
+//     const y2 = points[((i + 1) % n) * 2 + 1];
 
-    area += x1 * y2 - x2 * y1;
-  }
+//     area += x1 * y2 - x2 * y1;
+//   }
 
-  return Math.abs(area / 2); // Shoelace theorem formula
-};
+//   return Math.abs(area / 2); // Shoelace theorem formula
+// };
 
-// 🆕 Function: Approximate Brush Stroke Area (By Stroke Width & Path Length)
-const calculateBrushArea = (points: number[], strokeWidth: number): number => {
-  let length = 0;
+// // 🆕 Function: Approximate Brush Stroke Area (By Stroke Width & Path Length)
+// const calculateBrushArea = (points: number[], strokeWidth: number): number => {
+//   let length = 0;
 
-  for (let i = 0; i < points.length - 2; i += 2) {
-    const dx = points[i + 2] - points[i];
-    const dy = points[i + 3] - points[i + 1];
-    length += Math.sqrt(dx * dx + dy * dy);
-  }
+//   for (let i = 0; i < points.length - 2; i += 2) {
+//     const dx = points[i + 2] - points[i];
+//     const dy = points[i + 3] - points[i + 1];
+//     length += Math.sqrt(dx * dx + dy * dy);
+//   }
 
-  return length * strokeWidth; // Approximate area
-};
+//   return length * strokeWidth; // Approximate area
+// };
 
-// 🆕 Function: Compute Bounding Box from Points
-const calculateBoundingBoxFromPoints = (points: number[]): [number, number, number, number] => {
-  let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+// // 🆕 Function: Compute Bounding Box from Points
+// const calculateBoundingBoxFromPoints = (points: number[]): [number, number, number, number] => {
+//   let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
 
-  for (let i = 0; i < points.length; i += 2) {
-    minX = Math.min(minX, points[i]);
-    minY = Math.min(minY, points[i + 1]);
-    maxX = Math.max(maxX, points[i]);
-    maxY = Math.max(maxY, points[i + 1]);
-  }
+//   for (let i = 0; i < points.length; i += 2) {
+//     minX = Math.min(minX, points[i]);
+//     minY = Math.min(minY, points[i + 1]);
+//     maxX = Math.max(maxX, points[i]);
+//     maxY = Math.max(maxY, points[i + 1]);
+//   }
 
-  return [minX, minY, maxX - minX, maxY - minY]; // [x, y, width, height]
-};
+//   return [minX, minY, maxX - minX, maxY - minY]; // [x, y, width, height]
+// };
 
-const calculateBrushBoundingBox = (points: number[], strokeWidth: number): [number, number, number, number] => {
-  let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+// const calculateBrushBoundingBox = (points: number[], strokeWidth: number): [number, number, number, number] => {
+//   let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
 
-  for (let i = 0; i < points.length; i += 2) {
-    minX = Math.min(minX, points[i]);
-    minY = Math.min(minY, points[i + 1]);
-    maxX = Math.max(maxX, points[i]);
-    maxY = Math.max(maxY, points[i + 1]);
-  }
+//   for (let i = 0; i < points.length; i += 2) {
+//     minX = Math.min(minX, points[i]);
+//     minY = Math.min(minY, points[i + 1]);
+//     maxX = Math.max(maxX, points[i]);
+//     maxY = Math.max(maxY, points[i + 1]);
+//   }
 
-  // Expand bbox by half the stroke width in all directions
-  minX = Math.max(0, minX - strokeWidth / 2);
-  minY = Math.max(0, minY - strokeWidth / 2);
-  maxX = Math.min(700, maxX + strokeWidth / 2); // using max canvas size as 700px
-  maxY = Math.min(700, maxY + strokeWidth / 2);
+//   // Expand bbox by half the stroke width in all directions
+//   minX = Math.max(0, minX - strokeWidth / 2);
+//   minY = Math.max(0, minY - strokeWidth / 2);
+//   maxX = Math.min(700, maxX + strokeWidth / 2); // using max canvas size as 700px
+//   maxY = Math.min(700, maxY + strokeWidth / 2);
 
-  return [minX, minY, maxX - minX, maxY - minY];
-};
+//   return [minX, minY, maxX - minX, maxY - minY];
+// };
 
 
 export default generateCOCO
