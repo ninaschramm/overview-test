@@ -62,8 +62,14 @@ const SelectorsContainer = styled.div`
 `;
 
 const StyledButton = styled(Button)`
-  width: fit-content;
+  width: 280px; /* Default button width */
   padding: 10px 20px;
+  margin-top: 0, 20px !important; /* Override MUI margin */
+
+  @media (max-width: 600px) {
+    width: 100%; /* Full width on small screens */
+    margin: 0, 10px !important; /* Override MUI margin */
+  }
 `;
 
 const ResponsiveTypography = styled(Typography)`

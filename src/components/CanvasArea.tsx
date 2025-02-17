@@ -223,9 +223,9 @@ const CanvasContainer = styled.div`
   width: fit-content;
   height: fit-content;
   border: 2px solid #000;
-  overflow: auto !important;
 
   @media (max-width: 430px) {
     width: 100% !important;
+    overflow: auto !important;
   }
 `
