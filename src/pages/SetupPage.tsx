@@ -2,6 +2,7 @@ import React from "react";
 import ImageUploader from "../components/ImageUploader.tsx";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Typography } from "@mui/material";
+import ClassManager from "../components/ClassManager.tsx";
 
 const SetupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +15,10 @@ const SetupPage: React.FC = () => {
 
       {/* Image Uploader Component */}
       <ImageUploader />
-
+    
+      {/* Class Manager Component */}
+      <ClassManager />
+      
       {/* Button to Proceed to Annotation Page */}
       <Button 
         variant="contained" 

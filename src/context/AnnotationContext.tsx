@@ -40,11 +40,11 @@ interface Class {
 // For testing purposes
 // const SAMPLE_IMAGE = "https://images.ctfassets.net/8j5aqoy0ts8s/6z7MzieJ83Qz6MYqTRGGC6/7f925f3ab696ab8aab84a120846f34fb/saturated-colors-960px_3x.png";
 
-const PREDEFINED_CLASSES: Class[] = [
-  { name: 'Car', color: '#ff0000', id: 1 },
-  { name: 'Person', color: '#00ff00', id: 2 },
-  { name: 'Tree', color: '#0000ff', id: 3 }
-]
+// const PREDEFINED_CLASSES: Class[] = [
+//   { name: 'Car', color: '#ff0000', id: 1 },
+//   { name: 'Person', color: '#00ff00', id: 2 },
+//   { name: 'Tree', color: '#0000ff', id: 3 }
+// ]
 
 // Define the global state
 interface AnnotationState {
@@ -85,7 +85,9 @@ type Action =
   | { type: "SET_SELECTED_IMAGE"; payload: ImageFile | null }
   | { type: "REMOVE_IMAGE"; payload: string }
   | { type: "ADD_CLASS"; payload: Class }
-  | { type: "REMOVE_CLASS"; payload: number };
+  | { type: "REMOVE_CLASS"; payload: number }
+  | { type: "REMOVE_ANNOTATIONS_BY_CLASS"; payload: number }
+  | { type: "REMOVE_ANNOTATIONS_BY_IMAGE"; payload: number };
 
 // Reducer function to update the state
 const annotationReducer = (state: AnnotationState, action: Action): AnnotationState => {
@@ -182,12 +184,31 @@ const annotationReducer = (state: AnnotationState, action: Action): AnnotationSt
       return { ...state, images: [...state.images, action.payload] };
     case "SET_SELECTED_IMAGE":
       return { ...state, selectedImage: action.payload }; 
-    case "REMOVE_IMAGE":
-      return { ...state, images: state.images.filter(img => img.file !== action.payload) };
     case "ADD_CLASS":
       return { ...state, classes: [...state.classes, action.payload] };
     case "REMOVE_CLASS":
-      return { ...state, classes: state.classes.filter(cls => cls.id !== action.payload) };
+      return {
+        ...state,
+        classes: state.classes.filter(cl => cl.id !== action.payload),
+      };
+    case "REMOVE_ANNOTATIONS_BY_CLASS":
+      return {
+        ...state,
+        polygons: state.polygons.filter(poly => poly.categoryId !== action.payload),
+        lines: state.lines.filter(line => line.categoryId !== action.payload),
+      };
+    case "REMOVE_IMAGE":
+      return {
+        ...state,
+        images: state.images.filter(img => img.id !== action.payload),
+        selectedImage: state.selectedImage?.id === action.payload ? null : state.selectedImage,
+      };
+    case "REMOVE_ANNOTATIONS_BY_IMAGE":
+      return {
+        ...state,
+        polygons: state.polygons.filter(poly => poly.imageId !== action.payload),
+        lines: state.lines.filter(line => line.imageId !== action.payload),
+      };
     default:
       return state;
   }
@@ -220,10 +241,10 @@ export const AnnotationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     selectedImage: null,
     polygons: [],
     lines: [],
-    classes: PREDEFINED_CLASSES,
+    classes: [],
     activeTool: "brush",
     brushSize: 4,
-    activeClass: PREDEFINED_CLASSES[0] || null,
+    activeClass: null,
     historyStack: [],
     redoStack: [],
     tempPoints: [],
