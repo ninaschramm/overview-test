@@ -1,46 +1,83 @@
-# Getting Started with Create React App
+# Semantic Segmentation Annotation Tool
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
+This project is a **semantic segmentation annotation tool** that allows users to annotate images using **brush strokes** or **polygon drawing**. Users can **create classes**, **upload images**, **annotate data**, and **export the results in COCO format**.
 
-## Available Scripts
+The interface is **responsive**, supporting smaller screens and touch interactions.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 🚀 Features Overview
+1. **Setup Page**  
+   - Add or remove **classes** (each with a unique color).  
+   - Upload or delete **images**.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+2. **Annotation Page**  
+   - Draw using **brush** or **polygon** tools.  
+   - **Eraser tool** (only for brush strokes).  
+   - **Undo functionality**.  
+   - Change active **class** for annotation.  
+   - Switch between uploaded images.  
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+3. **Export Page**  
+   - Review annotated images before exporting.  
+   - Download annotations in **COCO JSON format**.
 
-### `npm test`
+---
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 📥 Installation & Setup
+### Requirements
+- **Node.js** (latest stable version recommended)
+- **npm** (included with Node.js)
 
-### `npm run build`
+### Steps
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/ninaschramm/overview-test.git
+   cd overview-annotation-tool
+2. **Install dependencies:**
+    ```sh
+    npm install
+3. **Start the development server:**
+    ```sh
+    npm start
+The app will be available at http://localhost:3000/.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🛠 Tech Stack
+- **React.js** – Frontend framework
+- **MUI (Material UI)** – UI components & styling
+- **Styled Components** – Additional styling
+- **Konva.js & React-Konva** – Canvas manipulation
+- **React Router** – Page navigation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 💡 Design Decisions & Justifications
+### 🔹 Why **Konva.js** instead of **Fabric.js**?
+Konva.js was chosen because it provides **better support for real-time drawing performance** and **built-in eraser functionality**.
 
-### `npm run eject`
+### 🔹 Why **React-Konva**?
+Using **React-Konva** ensures optimal **performance** by efficiently managing re-renders and leveraging **Konva.js’s lower-level canvas API**.
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### 🔹 Why **RLE (Run-Length Encoding)** for Annotations?
+The **test requirements explicitly stated** that annotations should be stored in **COCO format**, which supports **RLE encoding**.  
+RLE **compresses binary masks efficiently**, reducing file size by **storing consecutive pixel values as (length, value) pairs**, making it more optimized than storing full-resolution bitmaps.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## 🎥 Demo Video
+📌 **[Demo Video Link - Coming Soon]**  
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+---
 
-## Learn More
+## ⚠️ Known Issues
+1. **No pixel overlap prevention** – The application currently allows pixels to have multiple class labels if drawn over with different classes.
+2. **Eraser only works for brush strokes** – Users cannot erase polygons; they must use the **Undo** feature instead.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 🤝 Contribution
+If you’d like to improve the tool, **fork** the repository and submit a **pull request**.
+
+---
+

@@ -9,7 +9,6 @@ const ExportButton: React.FC = () => {
   const { selectedImage, lines, polygons } = state;
 
   const getPixelData = (): { brushMasks: ImageData[], polygonMasks: ImageData[] } => {
-    console.log("📌 getPixelData() called!");
   
     if (!selectedImage?.dimensions) {
       console.warn("⚠️ Image dimensions are not set!");
@@ -21,15 +20,12 @@ const ExportButton: React.FC = () => {
     // Separate normal strokes and eraser strokes
     const normalLines = lines.filter(line => !line.erase);
     const erasedLines = lines.filter(line => line.erase);
-    console.log('erasedLines', erasedLines);
   
     // Render brush strokes with erasing applied
     const brushMasks = normalLines.map((line) => renderBrushStrokeToCanvas(line, width, height, erasedLines));
   
     // Render polygons (no changes needed)
     const polygonMasks = polygons.map((poly) => renderPolygonToCanvas(poly, width, height));
-  
-    console.log("✅ Converted to masks:", { brushMasks, polygonMasks });
   
     return { brushMasks, polygonMasks };
   };
@@ -67,7 +63,7 @@ const ExportButton: React.FC = () => {
       ctx.lineWidth = eraseLine.strokeWidth;
       ctx.stroke();
     });
-    console.log('ctx.getImageData(0, 0, width, height)', ctx.getImageData(0, 0, width, height));
+    
     return ctx.getImageData(0, 0, width, height);
   };
   

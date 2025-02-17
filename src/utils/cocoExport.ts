@@ -45,7 +45,6 @@ const generateCOCO = (images, polygons, classes, lines, brushMasks, polygonMasks
   const polygonAnnotations = polygons.map((poly, index) => {
     const mask = polygonMasks[index]; // Get the mask for this polygon
     const { rle, bbox, area } = convertToRLE(mask);
-    console.log('RLE for id:', poly.id, rle);
 
     return {
       id: poly.id,
@@ -62,10 +61,8 @@ const generateCOCO = (images, polygons, classes, lines, brushMasks, polygonMasks
   const brushAnnotations = lines
     .filter(line => !line.erase && line.categoryId !== 0)
     .map((line, index) => {
-      const image = images.find((img) => img.id === line.imageId);
       const mask = brushMasks[index];
       const { rle, bbox, area } = convertToRLE(mask);
-      console.log('RLE for id:', line.id, rle);
 
       return {
         id: line.id,
