@@ -151,6 +151,15 @@ const CanvasArea = forwardRef((props, ref) => {
     
     handleBrushMouseUp();
   };
+
+    
+  const handleOnTap = (e: any) => {
+    if (e.evt.touches.length > 1) {
+      return;
+    }
+    
+    handlePolygonClick(e);
+  };
   
 
   return (
@@ -166,7 +175,7 @@ const CanvasArea = forwardRef((props, ref) => {
         onTouchStart={handleTouchStart}        
         onTouchMove={handleTouchMove}        
         onTouchEnd={handleTouchEnd}        
-        onTap={handlePolygonClick}
+        onTap={handleOnTap}
         preventDefault={false}
       >
         <Layer>
