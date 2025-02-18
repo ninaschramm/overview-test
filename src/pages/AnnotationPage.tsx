@@ -38,14 +38,14 @@ const StyledAnnotationContainer = styled(Box)`
   flex-direction: column;
   gap: 20px;
   padding: 20px;
-  height: calc(100vh - 56px);
+  height: calc(100dvh - 56px);
   max-width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
 
   @media (max-width: 600px) {
     padding: 10px;
-    height: calc(100vh - 120px);
+    height: calc(100dvh - 120px);
   }
 `;
 

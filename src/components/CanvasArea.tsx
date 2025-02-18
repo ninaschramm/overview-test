@@ -125,7 +125,33 @@ const CanvasArea = forwardRef((props, ref) => {
       dispatch({ type: "SET_TEMP_POINTS", payload: [...tempPoints, point.x, point.y] });
     }
   }  
-
+  const handleTouchStart = (e: any) => {
+  
+    if (e.evt.touches.length > 1) {
+      // Allow scrolling with two fingers
+      return;
+    }
+  
+    e.evt.preventDefault(); // Prevent scrolling with single touch
+    handleBrushMouseDown(e);
+  };
+  
+  const handleTouchMove = (e: any) => {
+  
+    if (e.evt.touches.length === 1) {
+      e.evt.preventDefault(); // ✅ Only prevent default on single touch
+      handleBrushMouseMove(e);
+    }
+  };  
+  
+  const handleTouchEnd = (e: any) => {
+    if (e.evt.touches.length > 1) {
+      return;
+    }
+    
+    handleBrushMouseUp();
+  };
+  
 
   return (
     <CanvasContainer>
@@ -133,15 +159,15 @@ const CanvasArea = forwardRef((props, ref) => {
         ref={stageRef}
         width={selectedImage?.dimensions.width}
         height={selectedImage?.dimensions.height}
-        style={{ overflow: "auto", touchAction: "none" }} // Prevents default scrolling
         onMouseDown={handleBrushMouseDown}
         onMouseMove={handleBrushMouseMove}
         onMouseUp={handleBrushMouseUp}
         onClick={handlePolygonClick}
-        onTouchStart={handleBrushMouseDown}
-        onTouchMove={handleBrushMouseMove}
-        onTouchEnd={handleBrushMouseUp}
+        onTouchStart={handleTouchStart}        
+        onTouchMove={handleTouchMove}        
+        onTouchEnd={handleTouchEnd}        
         onTap={handlePolygonClick}
+        preventDefault={false}
       >
         <Layer>
           {konvaImage && (
@@ -151,6 +177,7 @@ const CanvasArea = forwardRef((props, ref) => {
               y={0}
               width={selectedImage?.dimensions.width}
               height={selectedImage?.dimensions.height}
+              preventDefault={false}
             />
           )}
         </Layer>
@@ -223,9 +250,19 @@ const CanvasContainer = styled.div`
   width: fit-content;
   height: fit-content;
   border: 2px solid #000;
+  -webkit-overflow-scrolling: touch; /* Enables smooth scrolling on iOS */
 
-  @media (max-width: 430px) {
+  @media (max-width: 700px) {
     width: 100% !important;
-    overflow: auto !important;
+    overflow: scroll !important;
+    ::-webkit-scrollbar {
+      -webkit-appearance: none;
+      width: 7px;
+    }
+    ::-webkit-scrollbar-thumb {
+      border-radius: 4px;
+      background-color: rgba(0, 0, 0, .5);
+      -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+    }
   }
 `

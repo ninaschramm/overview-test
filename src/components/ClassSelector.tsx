@@ -11,7 +11,7 @@ const ClassSelector: React.FC = () => {
     <Box sx={{ maxWidth: 200 }}>
       <InputLabel>Select a class:</InputLabel>
       <Select
-        value={activeClass ? activeClass.id : classes[0]?.id || ""}
+        value={activeClass ? activeClass.id : "" }
         onChange={(e) => {
           const selectedClass = classes.find((cl) => cl.id === e.target.value);
           if (selectedClass) {

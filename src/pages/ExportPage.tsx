@@ -47,13 +47,13 @@ const StyledExportContainer = styled(Box)`
   flex-direction: column;
   align-items: start;
   padding: 20px;
-  height: calc(100vh - 56px);
+  height: calc(100dvh - 56px);
   overflow-y: auto;
   max-width: 100%;
 
   @media (max-width: 600px) {
     padding: 10px;
-    height: calc(100vh - 120px);
+    height: calc(100dvh - 120px);
   }
 `;
 
@@ -78,7 +78,11 @@ const StyledImageGrid = styled(Box)`
   gap: 20px;
 
   @media (max-width: 600px) {
+    width: 100%;
+    flex-wrap: nowrap;
+    flex-direction: column;
     justify-content: center;
+    align-items: center;
   }
 `;
 
@@ -96,7 +100,7 @@ const StyledImageCard = styled(Box)`
   padding: 10px;
 
   @media (max-width: 600px) {
-    max-width: 360px;
+    max-width: 300px;
   }
 `;
 
@@ -114,7 +118,7 @@ const StyledImageBox = styled(Box)`
   margin-bottom: 10px;
 
     @media (max-width: 600px) {
-      width: 360px;
+      width: 300px;
     }
 `;
 

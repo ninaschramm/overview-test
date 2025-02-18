@@ -16,7 +16,6 @@ const menuItems = [
 
 const Layout = ({ children }) => {
   const theme = useTheme();
-  console.log('theme', theme.zIndex.drawer);
   const isMobile = useMediaQuery(theme.breakpoints.down("sm")); // Detect small screens
 
   return (
@@ -61,7 +60,7 @@ const Layout = ({ children }) => {
       <StyledContent style={{ 
         marginBottom: isMobile ? "56px" : "0", 
         marginLeft: isMobile? "0" : drawerWidth,
-        height: isMobile? "calc(100vh - 113px)" : "calc(100vh - 56px)",
+        height: isMobile? "calc(100dvh - 113px)" : "calc(100dvh - 56px)",
         }}>{children}</StyledContent>
     </StyledLayout>
   );
