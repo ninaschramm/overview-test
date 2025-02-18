@@ -66,7 +66,7 @@ RLE **compresses binary masks efficiently**, reducing file size by **storing con
 ---
 
 ## 🎥 Demo Video
-📌 **[Demo Video Link - Coming Soon]**  
+📌 **[Watch the Demo Video](https://youtu.be/_guFlg6Ym9E)**
 
 ---
 
